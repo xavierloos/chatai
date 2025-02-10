@@ -3,8 +3,6 @@ import React, { useEffect, useState, useRef } from 'react';
 import {
 	Tabs,
 	Tab,
-	Card,
-	CardBody,
 	Input,
 	Modal,
 	ModalContent,
@@ -16,78 +14,126 @@ import {
 	Switch,
 	Avatar,
 	cn,
+	Textarea,
+	User,
+	Tooltip,
 } from '@nextui-org/react';
-import { PaperPlaneIcon, PlusIcon, ChatBubbleIcon, ReaderIcon, ChevronRightIcon } from '@radix-ui/react-icons';
+import {
+	PaperPlaneIcon,
+	PlusIcon,
+	ChatBubbleIcon,
+	ReaderIcon,
+	ChevronRightIcon,
+	UploadIcon,
+	TrashIcon,
+	LayersIcon,
+	PersonIcon,
+	Cross2Icon,
+} from '@radix-ui/react-icons';
+import { Alert } from '@heroui/react';
+import { AiOutlineFileSearch } from 'react-icons/ai';
+
+import { Message } from './_components/Message';
+import { TabHeader } from './_components/TabHeader';
+import { Header } from './_components/header';
+import { TabTitle } from './_components/TabTitle';
 
 export default function App() {
-	const [isVertical, setIsVertical] = React.useState(true);
-	const [isInfoZip, setIsInfoZip] = React.useState(false);
+	const [alertConfig, setAlertConfig] = useState({ visible: false, message: '', color: '' });
+	const [isLoading, setIsLoading] = useState(true);
+	const [isInfoZip, setIsInfoZip] = useState(false);
 	const [rooms, setRooms] = useState([]);
+	const [message, setMessage] = useState([]);
 	const [messages, setMessages] = useState([]);
 	const [chatName, setChatName] = useState('');
+	const [input, setInput] = useState('');
 	const chatContainerRef = useRef(null);
-	const [selectedKey, setSelectedKey] = React.useState(null);
-	const { isOpen, onOpen, onOpenChange } = useDisclosure();
+	const [selectedKey, setSelectedKey] = useState(null);
+	const [prevSelectedKey, setPrevSelectedKey] = useState(null);
+	const { isOpen, onOpen, onClose } = useDisclosure();
 
-	useEffect(() => {
-		const fetchRooms = async () => {
-			try {
-				const response = await fetch('http://127.0.0.1:5001/api/rooms');
-				const data = await response.json();
-
-				setRooms(data.rooms);
+	const fetchRooms = async () => {
+		try {
+			const response = await fetch('http://127.0.0.1:5001/api/rooms');
+			const data = await response.json();
+			setRooms(data.rooms);
+			if (data.rooms.length > 0) {
+				const initialMessages = await fetchMessages(data.rooms[0].id);
+				setMessages(initialMessages);
+				// setPrevSelectedKey(data.rooms[0].id);
 				setSelectedKey(data.rooms[0].id);
-			} catch (error) {
-				console.error('Error fetching chat rooms:', error);
 			}
-		};
+		} catch (error) {
+			console.error('Error fetching chat rooms:', error);
+		}
+	};
 
-		fetchRooms();
-	}, []);
+	const fetchMessages = async (roomId) => {
+		try {
+			const response = await fetch(`http://127.0.0.1:5001/api/rooms/${roomId}`);
+			const data = await response.json();
+			return data.messages;
+		} catch (error) {
+			console.error('Error fetching messages:', error);
+			return [];
+		}
+	};
 
-	// Create a new chat room
 	const createRoom = async () => {
 		if (!chatName.trim()) return;
 		try {
-			const response = await fetch('http://127.0.0.1:5000/api/chatrooms', {
+			const response = await fetch('http://127.0.0.1:5001/api/rooms', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ name: chatName, infoZip: isInfoZip }),
 			});
 			const data = await response.json();
 			if (response.ok) {
-				setRooms((prevRooms) => [...prevRooms, chatName]);
-				setChatName('');
-				alert(data.message);
+				await fetchRooms();
+				const msg = await fetchMessages(data.room.id);
+				setMessages(msg);
+				setSelectedKey(data.room.id);
+				setAlertConfig({ visible: true, message: data.message, color: 'success' });
 			} else {
-				alert(data.error);
+				setAlertConfig({ visible: true, message: data.error, color: 'danger' });
 			}
 		} catch (error) {
-			console.error('Error creating chat room:', error);
+			setAlertConfig({ visible: true, message: 'Error creating chat room', color: 'danger' });
 		}
+		alerTimer();
+		onClose();
 	};
 
-	const handleSendMessage = async () => {
-		if (input.trim() === '') return;
+	const handleSendMessage = async () => {};
 
-		const timestamp = new Date().toLocaleTimeString();
-		const userMessage = { text: input, sender: 'user', time: timestamp };
+	const changeRoom = async (roomId) => {
+		const msg = await fetchMessages(roomId);
+		setPrevSelectedKey(selectedKey);
+		setMessages(msg);
+		setSelectedKey(roomId);
+	};
 
+	const deleteRoom = async (roomId) => {
 		try {
-			const response = await fetch('http://127.0.0.1:5000/api', {
-				method: 'POST',
-				headers: { 'Content-Type': 'application/json' },
-				body: JSON.stringify({ chat: userMessage }),
-			});
+			const response = await fetch(`http://127.0.0.1:5001/api/rooms/${roomId}`, { method: 'DELETE' });
 			const data = await response.json();
-
-			setMessages((prevMessages) => [...prevMessages, userMessage, data.response]);
+			if (response.ok) {
+				await fetchRooms();
+				setSelectedKey(prevSelectedKey);
+				setAlertConfig({ visible: true, message: data.message, color: 'success' });
+			} else {
+				setAlertConfig({ visible: true, message: data.error, color: 'danger' });
+			}
 		} catch (error) {
-			console.error('Error sending message:', error);
+			setAlertConfig({ visible: true, message: 'Error deleting room', color: 'danger' });
 		}
-
-		setInput('');
+		alerTimer();
 	};
+
+	useEffect(() => {
+		fetchRooms();
+		setIsLoading(false);
+	}, []);
 
 	useEffect(() => {
 		if (chatContainerRef.current) {
@@ -95,122 +141,113 @@ export default function App() {
 		}
 	}, [messages]);
 
+	const cancelCreateRoom = async () => {
+		await fetchRooms();
+		const msg = await fetchMessages(prevSelectedKey);
+		setMessages(msg);
+		setSelectedKey(prevSelectedKey);
+		return onClose();
+	};
+
+	const alerTimer = () => {
+		const timer = setTimeout(() => {
+			setAlertConfig((prev) => ({ ...prev, visible: false }));
+		}, 5000);
+		return () => clearTimeout(timer);
+	};
+
+	if (isLoading) return <div>Loading...</div>;
+
 	return (
 		<>
 			<Tabs
 				aria-label='Chats'
-				isVertical={isVertical}
-				size='lg'
+				isVertical={true}
 				selectedKey={selectedKey}
 				radius='sm'
-				onSelectionChange={setSelectedKey}
+				onSelectionChange={(e) => changeRoom(e)}
 			>
-				{rooms.map((room, index) => (
+				{rooms.map((room) => (
 					<Tab
+						download='true'
+						fullWidth
 						key={room.id}
-						title={
-							<div className='flex items-center justify-between space-x-2 min-w-[200px]'>
-								<div className='flex items-center justify-start space-x-2'>
-									{room.type === 'chatbot' ? <ChatBubbleIcon /> : <ReaderIcon />}
-									<span>{room.name}</span>
-								</div>
-								{room.id == selectedKey && <ChevronRightIcon color='purple' />}
-							</div>
-						}
-						className='w-full h-full'
+						title={<TabTitle room={room} selectedKey={selectedKey} />}
+						className='w-full h-full !px-1 md:!px-3'
 					>
 						<div className='w-full h-full bg-primary-foreground shadow-lg flex flex-col rounded-xl'>
+							<TabHeader room={room} deleteRoom={deleteRoom} />
 							<div ref={chatContainerRef} className='flex-1 overflow-y-auto px-4 py-2 space-y-4'>
-								{room.messages.map((msg, index) => (
-									<div
-										key={index}
-										className={`flex flex-col items-start ${msg.sender !== 'user' && 'items-end'}`}
-									>
-										<div
-											className={`flex flex-row items-end gap-2 ${
-												msg.sender !== 'user' && 'flex-row-reverse'
-											}`}
-										>
-											<Avatar
-												showFallback
-												name={msg.sender}
-												classNames={{
-													base: `shadow-md bg-default ${
-														msg.sender !== 'user' && 'bg-primary'
-													}`,
-													// icon: 'text-primary',
-												}}
-											/>
-											{/* Message Bubble */}
-											<div
-												className={`relative px-4 py-2 shadow-md  ${
-													msg.sender !== 'user'
-														? 'bg-primary text-white'
-														: 'bg-gray-200 text-gray-800'
-												}`}
-												style={{
-													borderRadius: '1rem',
-													position: 'relative',
-													maxWidth: '70%',
-												}}
-											>
-												{msg.text}
-
-												{/* Bubble Tail */}
-												<div
-													className={`absolute w-3 h-3 ${
-														msg.sender !== 'user'
-															? 'bg-primary right-0 -mr-1.5 rotate-90'
-															: 'bg-gray-200 left-0 -ml-2'
-													}`}
-													style={{
-														clipPath: 'polygon(100% 0%, 0% 100%, 100% 100%)',
-														bottom: '0.25rem',
-													}}
-												></div>
-											</div>
-										</div>
-										{/* Timestamp */}
-										<div className='text-xs text-gray-500 mt-1'>{msg.time}</div>
-									</div>
-								))}
+								<h2 className='w-full flex justify-center text-xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary-100 drop-shadow-sm my-3'>
+									Welcome aboard!
+								</h2>
+								{selectedKey === room.id && messages?.map((msg, index) => <Message message={msg} />)}
 							</div>
-							<div className='flex items-center space-x-2 px-4 py-3'>
-								<Input
-									shadow='lg'
-									size='lg'
+							<div className='flex items-center space-x-1 px-2 py-1 md:space-x-2 md:px-4 md:py-3'>
+								<Textarea
+									shadow='md'
+									radius='lg'
+									size='sm'
+									minRows='1'
 									fullWidth
-									onChange={(e) => setInput(e.target.value)}
+									onValueChange={(e) => setMessage(e)}
 									endContent={
 										<Button
 											isIconOnly
 											radius='full'
 											color='primary'
-											size='md'
+											size='sm'
 											onClick={handleSendMessage}
+											isDisabled={!message}
 										>
 											<PaperPlaneIcon />
 										</Button>
 									}
 									placeholder='Ask me something'
-									type='text'
 								/>
+								{room.infoZip && (
+									<Button
+										isIconOnly
+										radius='full'
+										color='primary'
+										size='md'
+										onPress={handleSendMessage}
+									>
+										<UploadIcon />
+									</Button>
+								)}
 							</div>
 						</div>
 					</Tab>
 				))}
+
 				<Tab
+					isDisabled={rooms.length >= 10 ?? true}
 					key='create'
 					title={
-						<div onClick={onOpen} className='flex items-center justify-start space-x-2 min-w-[200px]'>
-							<PlusIcon />
-							<span>Create</span>
+						<div
+							onClick={onOpen}
+							className='flex items-center justify-start space-x-2 md:min-w-[200px] md:max-w-[200px] md:text-ellipsis md:overflow-x-hidden chatroom'
+						>
+							<Tooltip content={`Create`} className='flex md:hidden m-auto' placement='right'>
+								<User
+									size='sm'
+									avatarProps={{
+										showFallback: true,
+										icon: <PlusIcon />,
+										color: 'default',
+										size: 'sm',
+									}}
+									name={<span className='hidden  md:flex'>Create</span>}
+								/>
+							</Tooltip>
 						</div>
 					}
 					className='w-full h-full'
 				/>
 			</Tabs>
-			<Modal isOpen={isOpen} onOpenChange={onOpenChange} backdrop='blur' hideCloseButton={true}>
+
+			<Modal isOpen={isOpen} onOpenChange={onOpen} backdrop='blur' hideCloseButton={true}>
 				<ModalContent>
 					{(onClose) => (
 						<>
@@ -253,7 +290,7 @@ export default function App() {
 								</Switch>
 							</ModalBody>
 							<ModalFooter>
-								<Button color='danger' variant='light' onPress={onClose}>
+								<Button color='danger' variant='light' onPress={cancelCreateRoom}>
 									Cancel
 								</Button>
 								<Button color='primary' onPress={onClose} onClick={createRoom}>
@@ -263,7 +300,19 @@ export default function App() {
 						</>
 					)}
 				</ModalContent>
-			</Modal>{' '}
+			</Modal>
+
+			{alertConfig.visible && (
+				<div
+					className={`fixed top-5 right-1 transform md:-translate-x-1/2 z-50 transition-opacity duration-500 !h-max ${
+						alertConfig.visible ? 'flex' : 'flex'
+					}`}
+				>
+					<Alert color={alertConfig.color} onClose={() => setAlertConfig({ ...alertConfig, visible: false })}>
+						{alertConfig.message}
+					</Alert>
+				</div>
+			)}
 		</>
 	);
 }

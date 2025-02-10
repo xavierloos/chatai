@@ -37,23 +37,29 @@ def save_data(data):
 def get_rooms():
     data = load_data()
     return jsonify({"rooms": data['rooms']})
+
 # Route to create chat rooms
 
 
 @app.route('/api/rooms', methods=['POST'])
 def create_chatroom():
-    room_name = request.json.get('roomName')
+    room_name = request.json.get('name')
+    room_type = request.json.get('infoZip')
 
     if not room_name:
         return jsonify({"error": "Room name is required"}), 400
 
     data = load_data()
 
+    # Check if the room name already exists
+    if any(room['name'] == room_name for room in data['rooms']):
+        return jsonify({"error": f"Room name '{room_name}' is already taken"}), 400
+
     # Create a new room with a unique ID and empty messages list
     new_room = {
         "id": str(uuid.uuid4()),  # Generate a unique ID for the room
         "name": room_name,
-        "type": room_type,
+        "infoZip": room_type,
         "messages": []
     }
 
@@ -62,16 +68,11 @@ def create_chatroom():
 
     return jsonify({"message": f"Room '{room_name}' created successfully", "room": new_room})
 
-# Route to post a message to a specific room by ID
+# Route to fetch messages for a specific room by ID
 
 
-@app.route('/api/rooms/<room_id>', methods=['POST'])
-def post_message(room_id):
-    message = request.json.get('chat')
-
-    if not message:
-        return jsonify({"error": "Message data is required"}), 400
-
+@app.route('/api/rooms/<room_id>', methods=['GET'])
+def get_messages(room_id):
     data = load_data()
     room = next((room for room in data['rooms']
                 if room['id'] == room_id), None)
@@ -79,10 +80,27 @@ def post_message(room_id):
     if not room:
         return jsonify({"error": "Room not found"}), 404
 
-    room['messages'].append(message)
+    return jsonify({"messages": room['messages']})
+
+# Route to delete a chat room by ID
+
+
+@app.route('/api/rooms/<room_id>', methods=['DELETE'])
+def delete_chatroom(room_id):
+    data = load_data()
+
+    # Find the room to delete
+    room_to_delete = next(
+        (room for room in data['rooms'] if room['id'] == room_id), None)
+
+    if not room_to_delete:
+        return jsonify({"error": "Room not found"}), 404
+
+    # Remove the room from the list
+    data['rooms'] = [room for room in data['rooms'] if room['id'] != room_id]
     save_data(data)
 
-    return jsonify({"message": "Message sent successfully"})
+    return jsonify({"message": "Room   deleted successfully"})
 
 
 if __name__ == '__main__':

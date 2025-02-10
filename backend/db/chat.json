@@ -1,72 +1,64 @@
 {
-	"rooms": [
-		{
-			"id": "123e4567-e89b-12d3-a456-426614174000",
-			"name": "General",
-			"infoZip": false,
-			"messages": [
-				{
-					"text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
-					"sender": "user",
-					"time": "12:00 PM"
-				},
-				{
-					"text": "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
-					"sender": "ai",
-					"time": "12:05 PM"
-				},
-				{
-					"text": " Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur!",
-					"sender": "user",
-					"time": "12:10 PM"
-				},
-				{
-					"text": "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-					"sender": "ai",
-					"time": "12:15 PM"
-				},
-				{
-					"text": "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ",
-					"sender": "user",
-					"time": "12:20 PM"
-				},	{
-					"text": "Lorem ipsum dolor sit amet, consectetur adipiscing elit",
-					"sender": "user",
-					"time": "12:30 PM"
-				},
-				{
-					"text": "Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
-					"sender": "ai",
-					"time": "12:35 PM"
-				},
-				{
-					"text": " Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur!",
-					"sender": "user",
-					"time": "12:40 PM"
-				},
-				{
-					"text": "Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.",
-					"sender": "ai",
-					"time": "12:45 PM"
-				},
-				{
-					"text": "Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ",
-					"sender": "user",
-					"time": "12:50 PM"
-				}
-			]
-		},
-		{
-			"id": "123e4567-e89b-12d3-a456-426614174001",
-			"name": "Public",
-			"infoZip": true,
-			"messages": [
-				{
-					"text": "Hello, world!",
-					"sender": "user",
-					"time": "12:00 PM"
-				}
-			]
-		}
-	]
+    "rooms": [
+        {
+            "id": "6ba4aa72-f0ce-4c95-aab8-43ee0a9d933b",
+            "name": "Private",
+            "infoZip": true,
+            "messages": [
+                {
+                    "text": "Search all uploaded files for information about quantum computing.",
+                    "sender": "user",
+                    "time": "2:00 PM"
+                },
+                {
+                    "text": "Scanning files... 3 documents found containing relevant information.",
+                    "sender": "file",
+                    "time": "2:02 PM"
+                },
+                {
+                    "text": "Summarize the key points from those documents.",
+                    "sender": "user",
+                    "time": "2:03 PM"
+                },
+                {
+                    "text": "Summary: 1) Quantum computing uses qubits instead of classical bits. 2) Superposition and entanglement enable exponential processing power. 3) Major companies are developing quantum processors for cryptography and simulations.",
+                    "sender": "file",
+                    "time": "2:05 PM"
+                }
+            ]
+        },
+        {
+            "id": "2f78617f-88f3-49e9-be8f-82dfd6e1f7b9",
+            "name": "Public",
+            "infoZip": false,
+            "messages": [
+                {
+                    "text": "Hey, can you help me with a math problem?",
+                    "sender": "user",
+                    "time": "3:00 PM"
+                },
+                {
+                    "text": "Of course! What problem are you trying to solve?",
+                    "sender": "ai",
+                    "time": "3:01 PM"
+                },
+                {
+                    "text": "I need to calculate the interest on a loan. How do I do that?",
+                    "sender": "user",
+                    "time": "3:02 PM"
+                },
+                {
+                    "text": "You can use the formula: Interest = Principal \u00d7 Rate \u00d7 Time. Do you have the values for these?",
+                    "sender": "ai",
+                    "time": "3:03 PM"
+                }
+            ]
+        },
+        {
+            "id": "bcfd144c-e7fb-4a83-81a5-354aecd7aea0",
+            "name": "New room",
+            "infoZip": false,
+            "messages": []
+        }
+    ]
 }
